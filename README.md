@@ -1,80 +1,55 @@
 # CloudDroid
 
-CloudDroid is a Cloudflare-hosted control dashboard and a secure, read-only status bridge for a separately hosted Android device.
+CloudDroid is a Cloudflare Pages dashboard for a separately hosted Android device. It includes a status bridge and authenticated start/stop/restart command proxy.
 
-## Reality check: free 24/7 Android 17
+## Important zero-cost limitation
 
-There is no dependable way to promise a 24/7 Android 17 gaming phone at zero cost. Cloudflare Pages/Workers do not provide Android compute, GPU acceleration, persistent emulator storage, or a continuously running phone. Free virtual machines can have quotas, idle reclamation, regional limits, and may not support the graphics stack needed by games.
+No reliable service can be promised to provide a 24/7 Android 17 gaming phone at exactly zero cost. Cloudflare Pages/Workers do not provide Android compute, persistent emulator storage, GPU acceleration or a running phone. Free VMs may have quotas, reclamation, limited virtualization, and no graphics acceleration. Android 17 and Free Fire compatibility must be verified with the actual provider.
 
-This repository therefore does not pretend that a device exists. It reports **Not configured** until a real compatible host is connected. Android 17 support must be verified on the chosen host/runtime; do not assume an Android container image supports it.
+This repository is a real control-plane application, not an Android emulator. It reports an unconfigured state until a compatible host is connected.
 
-## Architecture
+## Deploy to Cloudflare Pages
 
-- **Cloudflare Pages** serves `index.html`.
-- **Pages Functions** provide `/api/status`.
-- **Android host** is a separate Linux server or managed cloud Android provider.
-- **Status bridge** calls the host from the server side; the host token is never sent to browser JavaScript.
-- **Remote display/input and lifecycle controls** are intentionally disabled until a provider-specific, authenticated adapter is implemented and tested.
+1. Workers & Pages → Create application → Pages → Connect to Git.
+2. Select this repository and \`main\`.
+3. Framework preset: None.
+4. Build command: leave empty (or \`exit 0\` only if required).
+5. Build output directory: \`.\` (repository root).
+6. Deploy. Do not use \`npx wrangler deploy\` for Pages Git deployments.
 
-## Deploy dashboard
+## Configure secrets
 
-1. Open Cloudflare **Workers & Pages → Create application → Pages → Connect to Git**.
-2. Choose this repository and branch `main`.
-3. Framework preset: **None**.
-4. Build command: leave empty (or use `exit 0` only if the UI requires a command).
-5. Build output directory: `.` (repository root).
-6. Deploy.
+In Pages project → Settings → Variables and Secrets, add these as encrypted secrets:
 
-Do not use `npx wrangler deploy`; that is the Worker-script deployment command, not the Pages Git build configuration.
+- \`ANDROID_HOST_URL\`: HTTPS origin of your Android gateway.
+- \`ANDROID_HOST_TOKEN\`: strong random bearer token accepted by the gateway.
+- \`CLOUDDROID_ACCESS_KEY\`: a separate strong key you enter in the dashboard to unlock lifecycle controls.
 
-## Configure a real Android host
+Never commit these secrets to GitHub. Redeploy after adding or changing variables.
 
-In the Cloudflare Pages project, open **Settings → Variables and Secrets** and add:
+## Host API contract
 
-- `ANDROID_HOST_URL`: HTTPS origin of your own Android-host gateway, for example `https://android-gateway.example.com`.
-- `ANDROID_HOST_TOKEN`: a long random secret accepted by that gateway.
+See [docs/ANDROID_HOST_API.md](docs/ANDROID_HOST_API.md). Host routes:
+- \`GET /api/v1/status\`
+- \`POST /api/v1/device/start\`
+- \`POST /api/v1/device/stop\`
+- \`POST /api/v1/device/restart\`
 
-The gateway must implement:
+All routes must require the bearer token and use HTTPS. Lifecycle operations must be rate-limited and audited. The CloudDroid API requires \`X-CloudDroid-Key\` for command requests.
 
-`GET /api/v1/status`
+## Included
 
-It must require `Authorization: Bearer <token>` and return JSON with this shape:
+- Responsive mobile dashboard and device status.
+- Server-side status bridge.
+- Authenticated start, stop and restart proxy.
+- No host token in browser code.
+- Activity log and honest disconnected state.
 
-```json
-{
-  "status": "Running",
-  "message": "Android host connected",
-  "androidVersion": "17",
-  "uptime": "2h 14m",
-  "resources": "2 vCPU / 4 GB RAM",
-  "gameStatus": "Not checked"
-}
-```
+## Not included yet
 
-The status function exposes only the validated display fields. It never returns the host token. If the gateway is missing or unreachable, the dashboard reports that honestly.
+- Android 17 emulator/runtime (requires an external host).
+- Live screen streaming, WebRTC/VNC/scrcpy browser client or touch forwarding (provider-specific).
+- Guaranteed 24/7 uptime or a free compute allocation.
+- Game installation or game automation.
 
-## Host requirements
-
-A suitable host needs:
-- Explicit support for the required Android version (verify Android 17 rather than assuming).
-- Persistent writable storage and a documented restart policy.
-- Enough CPU/RAM and compatible graphics/virtualization for the intended workload.
-- HTTPS, authentication, firewalling, rate limits, and logs.
-- A provider-supported remote display and input protocol if browser control is required.
-
-Never expose ADB, scrcpy, VNC, WebRTC control, or an emulator management port directly to the public internet. Put them behind an authenticated gateway. Do not commit tokens to GitHub or put them in frontend code.
-
-## Current feature status
-
-| Feature | Status |
-|---|---|
-| Dashboard | Included |
-| Cloudflare status API | Included |
-| Server-side host status bridge | Included |
-| Android 17 runtime | Requires separate host |
-| 24/7 uptime | Depends on host plan and quotas |
-| Start/stop/restart | Not enabled |
-| Live screen and touch | Not enabled |
-| Free Fire | Not bundled; install only through supported, legitimate means |
-
-This project is for manual remote operation. It does not automate gameplay, create rooms, or bypass game protections.
+Remote screen and touch must be implemented against the selected provider's documented protocol. Never expose ADB or an unauthenticated control port publicly. This app is intended for manual remote operation, not gameplay automation.
