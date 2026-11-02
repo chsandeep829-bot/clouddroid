@@ -1,16 +1,19 @@
-# Android host gateway contract
+# CloudDroid Android host gateway contract
 
-CloudDroid's Pages Function currently consumes only this endpoint:
+All host routes must require HTTPS and the bearer token stored in Cloudflare as \`ANDROID_HOST_TOKEN\`.
 
-- Method: `GET`
-- Path: `/api/v1/status`
-- Authentication: `Authorization: Bearer <ANDROID_HOST_TOKEN>`
-- Transport: HTTPS only
-- Response: JSON object with string fields `status`, `message`, `androidVersion`, `uptime`, `resources`, and `gameStatus`.
+## Required routes
 
-Example:
+- \`GET /api/v1/status\` returns JSON with string fields: \`status\`, \`message\`, \`androidVersion\`, \`uptime\`, \`resources\`, \`gameStatus\`.
+- \`POST /api/v1/device/start\`
+- \`POST /api/v1/device/stop\`
+- \`POST /api/v1/device/restart\`
 
-```json
+Lifecycle routes return JSON such as \`{"message":"Start accepted"}\`. They must authorize the bearer token, validate state transitions, rate-limit requests and audit actions. The CloudDroid Pages Function additionally requires \`CLOUDDROID_ACCESS_KEY\` from the browser as \`X-CloudDroid-Key\`.
+
+## Example status
+
+\`\`\`json
 {
   "status": "Running",
   "message": "Android host connected",
@@ -19,8 +22,10 @@ Example:
   "resources": "2 vCPU / 4 GB RAM",
   "gameStatus": "Not checked"
 }
-```
+\`\`\`
 
-The CloudDroid API deliberately does not proxy arbitrary URLs, accept browser-supplied host addresses, or return the host credential. Lifecycle and remote-control endpoints are not implemented yet. Add them only with authenticated authorization, CSRF protection where applicable, strict input validation, audit logs, rate limits, and short-lived remote-view sessions.
+## Remote display
 
-Do not expose ADB or an unauthenticated VNC/scrcpy/WebRTC control endpoint publicly.
+Remote screen and touch are deliberately not implemented by these generic routes. Providers use different protocols (WebRTC, VNC gateways, scrcpy web frontends, etc.). Implement a provider-specific, short-lived session endpoint and browser client only after selecting a provider and reviewing its authentication and origin requirements.
+
+Never expose ADB or a raw remote-control port to the public internet. Do not return the bearer token or permanent remote-control URL to browser JavaScript.
