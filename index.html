@@ -1,51 +1,35 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#080d19">
-  <title>CloudDroid — Cloud Android Console</title>
-  <style>
-    :root{color-scheme:dark;--bg:#080d19;--panel:#111a2b;--line:#24334c;--muted:#91a2bd;--text:#f3f6fc;--blue:#68a4ff;--green:#4bd6a0}
-    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% 0%,#172d50 0,transparent 38%),var(--bg);color:var(--text);font:15px/1.5 Inter,ui-sans-serif,system-ui,sans-serif}
-    .wrap{max-width:1100px;margin:auto;padding:28px 20px 60px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:30px}.brand{display:flex;align-items:center;gap:12px;font-size:21px;font-weight:750;letter-spacing:-.5px}.logo{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#438cff,#795cf6);box-shadow:0 8px 30px #346be855;font-size:22px}
-    .pill{border:1px solid var(--line);border-radius:999px;padding:7px 12px;color:var(--muted);font-size:12px}.hero{margin:24px 0 26px}.eyebrow{color:var(--blue);font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase}.hero h1{font-size:clamp(30px,5vw,48px);line-height:1.08;letter-spacing:-1.8px;margin:10px 0}.hero p{color:var(--muted);max-width:680px;margin:0}
-    .grid{display:grid;grid-template-columns:1.3fr .7fr;gap:18px}.card{background:linear-gradient(145deg,#141f33,#0f1727);border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:0 18px 55px #0003}.card h2{font-size:16px;margin:0 0 16px}.device{min-height:260px;display:grid;place-items:center;text-align:center;border:1px dashed #344967;border-radius:15px;background:#0a1220;padding:24px}.phone{width:74px;height:112px;border:3px solid #6e89b4;border-radius:17px;display:grid;place-items:center;margin:0 auto 14px;color:var(--blue);font-size:27px}.muted{color:var(--muted)}.status{display:inline-flex;align-items:center;gap:8px;color:#ffc66d;font-size:13px}.dot{width:8px;height:8px;border-radius:50%;background:#ffc66d;box-shadow:0 0 12px #ffc66d88}.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}button{border:1px solid #36517b;border-radius:11px;background:#1b3152;color:white;padding:11px 16px;font-weight:650;cursor:pointer}button.primary{background:linear-gradient(120deg,#347df1,#6657df);border:0}button:disabled{opacity:.45;cursor:not-allowed}.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:#0b1423;border:1px solid var(--line);border-radius:13px;padding:14px}.stat small{display:block;color:var(--muted);margin-bottom:6px}.stat strong{font-size:18px}.notice{margin-top:18px;border-left:3px solid #e4ae54;background:#2a2115;padding:13px 15px;border-radius:8px;color:#e9d6b2;font-size:13px}.foot{margin-top:22px;color:#74849f;font-size:12px}
-    @media(max-width:760px){.grid{grid-template-columns:1fr}.top{align-items:flex-start}.pill{max-width:150px;text-align:center}}
-  </style>
-</head>
-<body>
-  <main class="wrap">
-    <header class="top"><div class="brand"><div class="logo">◈</div>CloudDroid</div><span class="pill">REMOTE ANDROID CONSOLE</span></header>
-    <section class="hero"><div class="eyebrow">Your cloud device workspace</div><h1>Manage your Android<br>from anywhere.</h1><p>A control dashboard scaffold for a separately hosted Android device. Connect a real emulator host before using device controls.</p></section>
-    <section class="grid">
-      <article class="card"><h2>Cloud device</h2><div class="device"><div><div class="phone">▯</div><div class="status"><span class="dot"></span><span id="state">Checking connection…</span></div><p class="muted" id="detail">No Android host has been configured.</p><div class="actions"><button class="primary" id="start" disabled>Start device</button><button id="stop" disabled>Stop device</button><button id="refresh">Refresh status</button></div></div></div><div class="notice">This dashboard does not run Android itself. Cloudflare Pages/Workers host the web app and API; a separate compatible Android server is required for a persistent device.</div></article>
-      <aside class="card"><h2>Device information</h2><div class="stats"><div class="stat"><small>Android version</small><strong id="android">—</strong></div><div class="stat"><small>Uptime</small><strong id="uptime">—</strong></div><div class="stat"><small>CPU / RAM</small><strong id="resources">—</strong></div><div class="stat"><small>Game status</small><strong id="game">Not connected</strong></div></div><h2 style="margin-top:22px">Connection</h2><p class="muted" id="connection">API: checking…</p><p class="muted">Remote screen streaming and touch input are not enabled until a secure Android-host adapter is configured.</p></aside>
-    </section>
-    <footer class="foot">CloudDroid starter · Manual remote operation only · No game automation included</footer>
-  </main>
-  <script>
-    const $=id=>document.getElementById(id);
-    async function refresh(){
-      $('state').textContent='Checking connection…';$('connection').textContent='API: checking…';
-      try{
-        const r=await fetch('/api/status',{headers:{accept:'application/json'}});
-        const d=await r.json();
-        $('connection').textContent='API: '+(r.ok?'online':'error');
-        $('state').textContent=d.device?.status||'Not connected';
-        $('detail').textContent=d.device?.message||'No Android host has been configured.';
-        $('android').textContent=d.device?.androidVersion||'—';
-        $('uptime').textContent=d.device?.uptime||'—';
-        $('resources').textContent=d.device?.resources||'—';
-        $('game').textContent=d.device?.gameStatus||'Not connected';
-        $('start').disabled=!d.capabilities?.startStop;
-        $('stop').disabled=!d.capabilities?.startStop;
-      }catch(e){$('connection').textContent='API: unavailable';$('state').textContent='Offline';$('detail').textContent='Could not reach the CloudDroid API.';}
-    }
-    $('refresh').addEventListener('click',refresh);
-    $('start').addEventListener('click',()=>alert('Connect an authenticated Android-host adapter before enabling device actions.'));
-    $('stop').addEventListener('click',()=>alert('Connect an authenticated Android-host adapter before enabling device actions.'));
-    refresh();
-  </script>
-</body>
-</html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080d19">
+<title>CloudDroid — Android Control Center</title>
+<style>
+:root{color-scheme:dark;--bg:#080d19;--panel:#111a2b;--panel2:#0b1423;--line:#24334c;--muted:#91a2bd;--text:#f3f6fc;--blue:#68a4ff;--green:#4bd6a0;--amber:#ffc66d;--red:#ff7c89}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% 0%,#172d50 0,transparent 38%),var(--bg);color:var(--text);font:15px/1.5 Inter,ui-sans-serif,system-ui,sans-serif}.wrap{max-width:1180px;margin:auto;padding:24px 18px 60px}.top{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:30px}.brand{display:flex;align-items:center;gap:12px;font-size:21px;font-weight:780;letter-spacing:-.5px}.logo{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#438cff,#795cf6);box-shadow:0 8px 30px #346be855;font-size:22px}.pill{border:1px solid var(--line);border-radius:999px;padding:7px 12px;color:var(--muted);font-size:12px}.hero{margin:20px 0 25px}.eyebrow{color:var(--blue);font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase}.hero h1{font-size:clamp(30px,5vw,46px);line-height:1.08;letter-spacing:-1.7px;margin:9px 0}.hero p{color:var(--muted);max-width:720px;margin:0}.grid{display:grid;grid-template-columns:1.25fr .75fr;gap:16px}.card{background:linear-gradient(145deg,#141f33,#0f1727);border:1px solid var(--line);border-radius:19px;padding:20px;box-shadow:0 18px 55px #0003}.card h2{font-size:16px;margin:0 0 15px}.device{min-height:310px;display:grid;place-items:center;text-align:center;border:1px dashed #344967;border-radius:15px;background:#0a1220;padding:20px}.phone{width:78px;height:120px;border:3px solid #6e89b4;border-radius:18px;display:grid;place-items:center;margin:0 auto 14px;color:var(--blue);font-size:28px}.muted{color:var(--muted)}.status{display:inline-flex;align-items:center;gap:8px;color:var(--amber);font-size:13px}.dot{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 12px #ffc66d88}.dot.good{background:var(--green);box-shadow:0 0 12px #4bd6a088}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:17px;justify-content:center}button{border:1px solid #36517b;border-radius:11px;background:#1b3152;color:white;padding:10px 14px;font-weight:650;cursor:pointer}button.primary{background:linear-gradient(120deg,#347df1,#6657df);border:0}button.danger{border-color:#713e50;background:#3a1d2b}button:disabled{opacity:.4;cursor:not-allowed}.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:13px}.stat small{display:block;color:var(--muted);margin-bottom:6px}.stat strong{font-size:17px;overflow-wrap:anywhere}.notice{margin-top:15px;border-left:3px solid var(--amber);background:#2a2115;padding:12px 14px;border-radius:8px;color:#e9d6b2;font-size:13px}.row{display:flex;justify-content:space-between;align-items:center;gap:10px}.log{height:115px;overflow:auto;background:#080f1c;border:1px solid var(--line);border-radius:11px;padding:10px;color:#9fb1cc;font:12px/1.6 ui-monospace,monospace}.field{display:flex;gap:8px;margin-top:10px}.field input{min-width:0;flex:1;background:#080f1c;border:1px solid var(--line);border-radius:10px;color:white;padding:11px}.foot{margin-top:20px;color:#74849f;font-size:12px}.wide{margin-top:16px}.screen{min-height:180px;display:grid;place-items:center;background:#070c15;border:1px solid var(--line);border-radius:13px;text-align:center;padding:20px}.screen img,.screen video{max-width:100%;max-height:460px;border-radius:9px}.hidden{display:none!important}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.top{align-items:flex-start}.pill{max-width:150px;text-align:center}.wrap{padding:18px 13px 40px}}
+</style></head>
+<body><main class="wrap">
+<header class="top"><div class="brand"><div class="logo">◈</div>CloudDroid</div><span class="pill">ANDROID CONTROL CENTER</span></header>
+<section class="hero"><div class="eyebrow">Private cloud device workspace</div><h1>Your Android.<br>Your control center.</h1><p>Monitor a real remote Android host, send authorized lifecycle commands and view a provider-issued remote session. A separate Android server is required.</p></section>
+<section class="grid">
+<article class="card"><div class="row"><h2>Cloud device</h2><span class="pill" id="apiBadge">API checking</span></div>
+<div class="device"><div><div class="phone">▯</div><div class="status"><span class="dot" id="dot"></span><span id="state">Checking host…</span></div><p class="muted" id="detail">Checking CloudDroid API.</p><div class="actions"><button class="primary" id="start" disabled>Start</button><button id="restart" disabled>Restart</button><button class="danger" id="stop" disabled>Stop</button><button id="refresh">Refresh</button></div></div></div>
+<div class="notice" id="notice">Cloudflare runs this dashboard and API, not Android. No phone is running until a compatible Android host is connected.</div></article>
+<aside class="card"><h2>Device information</h2><div class="stats">
+<div class="stat"><small>Android version</small><strong id="android">—</strong></div><div class="stat"><small>Uptime</small><strong id="uptime">—</strong></div><div class="stat"><small>CPU / RAM</small><strong id="resources">—</strong></div><div class="stat"><small>Game status</small><strong id="game">Unknown</strong></div></div>
+<h2 style="margin-top:20px">Secure control key</h2><p class="muted">Enter the dashboard access key configured in Cloudflare secrets. It is kept only in this browser tab.</p><div class="field"><input id="key" type="password" placeholder="Dashboard access key" autocomplete="off"><button id="saveKey">Unlock</button></div><p class="muted" id="authState">Controls locked</p>
+</aside></section>
+<section class="card wide"><div class="row"><h2>Remote screen</h2><span class="pill" id="screenState">Not connected</span></div><div class="screen" id="screen"><div><div style="font-size:30px">▣</div><p class="muted">A provider-specific remote-view session is required.<br>Screen streaming and touch are not enabled by the generic host adapter.</p></div></div></section>
+<section class="card wide"><h2>Activity log</h2><div class="log" id="log" aria-live="polite">CloudDroid initialized.</div></section>
+<footer class="foot">CloudDroid · Manual remote operation · No gameplay automation · Never share your access key</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);let state=null;let accessKey="";
+function log(s){const line="["+new Date().toLocaleTimeString()+"] "+s;$("log").textContent=line+"\n"+$("log").textContent}
+function authHeaders(){return {"Content-Type":"application/json","X-CloudDroid-Key":accessKey}}
+async function refresh(){try{const r=await fetch("/api/status",{cache:"no-store"});const d=await r.json();state=d;$("apiBadge").textContent=r.ok?"API online":"API error";$("state").textContent=d.device?.status||"Unknown";$("detail").textContent=d.device?.message||"No host status available."; $("android").textContent=d.device?.androidVersion||"—";$("uptime").textContent=d.device?.uptime||"—";$("resources").textContent=d.device?.resources||"—";$("game").textContent=d.device?.gameStatus||"Unknown";$("dot").classList.toggle("good",d.device?.status==="Running");$("start").disabled=!d.capabilities?.startStop||!accessKey;$("stop").disabled=!d.capabilities?.startStop||!accessKey;$("restart").disabled=!d.capabilities?.startStop||!accessKey;$("notice").textContent=d.device?.message||"Host status unavailable.";log("Status refreshed: "+(d.device?.status||"unknown"));}catch(e){$("apiBadge").textContent="API unavailable";$("state").textContent="Offline";$("detail").textContent="Could not reach /api/status.";log("Status request failed.");}}
+async function action(action){if(!accessKey){log("Unlock controls first.");return}const b=$(action);try{["start","stop","restart"].forEach(x=>$(x).disabled=true);log("Sending "+action+" command…");const r=await fetch("/api/action",{method:"POST",headers:authHeaders(),body:JSON.stringify({action})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Request failed");log(action+" accepted by host.");await refresh();}catch(e){log("Command failed: "+e.message)}finally{["start","stop","restart"].forEach(x=>$(x).disabled=!state?.capabilities?.startStop||!accessKey)}}
+$("saveKey").onclick=()=>{accessKey=$("key").value.trim();$("authState").textContent=accessKey?"Key entered for this tab; verifying on next action.":"Controls locked";["start","stop","restart"].forEach(x=>$(x).disabled=!state?.capabilities?.startStop||!accessKey);log(accessKey?"Control key entered.":"Control key cleared.")};
+$("start").onclick=()=>action("start");$("stop").onclick=()=>action("stop");$("restart").onclick=()=>action("restart");$("refresh").onclick=refresh;
+refresh();setInterval(refresh,30000);
+</script></body></html>
