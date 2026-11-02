@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#080d19">
+  <title>CloudDroid — Cloud Android Console</title>
+  <style>
+    :root{color-scheme:dark;--bg:#080d19;--panel:#111a2b;--line:#24334c;--muted:#91a2bd;--text:#f3f6fc;--blue:#68a4ff;--green:#4bd6a0}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% 0%,#172d50 0,transparent 38%),var(--bg);color:var(--text);font:15px/1.5 Inter,ui-sans-serif,system-ui,sans-serif}
+    .wrap{max-width:1100px;margin:auto;padding:28px 20px 60px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:30px}.brand{display:flex;align-items:center;gap:12px;font-size:21px;font-weight:750;letter-spacing:-.5px}.logo{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#438cff,#795cf6);box-shadow:0 8px 30px #346be855;font-size:22px}
+    .pill{border:1px solid var(--line);border-radius:999px;padding:7px 12px;color:var(--muted);font-size:12px}.hero{margin:24px 0 26px}.eyebrow{color:var(--blue);font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase}.hero h1{font-size:clamp(30px,5vw,48px);line-height:1.08;letter-spacing:-1.8px;margin:10px 0}.hero p{color:var(--muted);max-width:680px;margin:0}
+    .grid{display:grid;grid-template-columns:1.3fr .7fr;gap:18px}.card{background:linear-gradient(145deg,#141f33,#0f1727);border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:0 18px 55px #0003}.card h2{font-size:16px;margin:0 0 16px}.device{min-height:260px;display:grid;place-items:center;text-align:center;border:1px dashed #344967;border-radius:15px;background:#0a1220;padding:24px}.phone{width:74px;height:112px;border:3px solid #6e89b4;border-radius:17px;display:grid;place-items:center;margin:0 auto 14px;color:var(--blue);font-size:27px}.muted{color:var(--muted)}.status{display:inline-flex;align-items:center;gap:8px;color:#ffc66d;font-size:13px}.dot{width:8px;height:8px;border-radius:50%;background:#ffc66d;box-shadow:0 0 12px #ffc66d88}.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}button{border:1px solid #36517b;border-radius:11px;background:#1b3152;color:white;padding:11px 16px;font-weight:650;cursor:pointer}button.primary{background:linear-gradient(120deg,#347df1,#6657df);border:0}button:disabled{opacity:.45;cursor:not-allowed}.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:#0b1423;border:1px solid var(--line);border-radius:13px;padding:14px}.stat small{display:block;color:var(--muted);margin-bottom:6px}.stat strong{font-size:18px}.notice{margin-top:18px;border-left:3px solid #e4ae54;background:#2a2115;padding:13px 15px;border-radius:8px;color:#e9d6b2;font-size:13px}.foot{margin-top:22px;color:#74849f;font-size:12px}
+    @media(max-width:760px){.grid{grid-template-columns:1fr}.top{align-items:flex-start}.pill{max-width:150px;text-align:center}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="top"><div class="brand"><div class="logo">◈</div>CloudDroid</div><span class="pill">REMOTE ANDROID CONSOLE</span></header>
+    <section class="hero"><div class="eyebrow">Your cloud device workspace</div><h1>Manage your Android<br>from anywhere.</h1><p>A control dashboard scaffold for a separately hosted Android device. Connect a real emulator host before using device controls.</p></section>
+    <section class="grid">
+      <article class="card"><h2>Cloud device</h2><div class="device"><div><div class="phone">▯</div><div class="status"><span class="dot"></span><span id="state">Checking connection…</span></div><p class="muted" id="detail">No Android host has been configured.</p><div class="actions"><button class="primary" id="start" disabled>Start device</button><button id="stop" disabled>Stop device</button><button id="refresh">Refresh status</button></div></div></div><div class="notice">This dashboard does not run Android itself. Cloudflare Pages/Workers host the web app and API; a separate compatible Android server is required for a persistent device.</div></article>
+      <aside class="card"><h2>Device information</h2><div class="stats"><div class="stat"><small>Android version</small><strong id="android">—</strong></div><div class="stat"><small>Uptime</small><strong id="uptime">—</strong></div><div class="stat"><small>CPU / RAM</small><strong id="resources">—</strong></div><div class="stat"><small>Game status</small><strong id="game">Not connected</strong></div></div><h2 style="margin-top:22px">Connection</h2><p class="muted" id="connection">API: checking…</p><p class="muted">Remote screen streaming and touch input are not enabled until a secure Android-host adapter is configured.</p></aside>
+    </section>
+    <footer class="foot">CloudDroid starter · Manual remote operation only · No game automation included</footer>
+  </main>
+  <script>
+    const $=id=>document.getElementById(id);
+    async function refresh(){
+      $('state').textContent='Checking connection…';$('connection').textContent='API: checking…';
+      try{
+        const r=await fetch('/api/status',{headers:{accept:'application/json'}});
+        const d=await r.json();
+        $('connection').textContent='API: '+(r.ok?'online':'error');
+        $('state').textContent=d.device?.status||'Not connected';
+        $('detail').textContent=d.device?.message||'No Android host has been configured.';
+        $('android').textContent=d.device?.androidVersion||'—';
+        $('uptime').textContent=d.device?.uptime||'—';
+        $('resources').textContent=d.device?.resources||'—';
+        $('game').textContent=d.device?.gameStatus||'Not connected';
+        $('start').disabled=!d.capabilities?.startStop;
+        $('stop').disabled=!d.capabilities?.startStop;
+      }catch(e){$('connection').textContent='API: unavailable';$('state').textContent='Offline';$('detail').textContent='Could not reach the CloudDroid API.';}
+    }
+    $('refresh').addEventListener('click',refresh);
+    $('start').addEventListener('click',()=>alert('Connect an authenticated Android-host adapter before enabling device actions.'));
+    $('stop').addEventListener('click',()=>alert('Connect an authenticated Android-host adapter before enabling device actions.'));
+    refresh();
+  </script>
+</body>
+</html>
